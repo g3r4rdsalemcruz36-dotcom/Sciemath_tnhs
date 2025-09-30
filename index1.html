@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI + Solver + Calculator</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .box { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 6px; }
+    input, button { padding: 8px; margin-top: 5px; }
+    .output { margin-top: 10px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+
+  <!-- AI Chatbox -->
+  <div class="box">
+    <h2>AI Assistant (Chatbase)</h2>
+    <input type="text" id="aiInput" placeholder="Ask something..." size="40">
+    <button onclick="askAI()">Send</button>
+    <div id="aiResponse" class="output"></div>
+  </div>
+
+  <!-- Polynomial Solver -->
+  <div class="box">
+    <h2>Polynomial Solver</h2>
+    <input type="text" id="polyInput" placeholder="Enter polynomial (e.g. x^2+2x+1)">
+    <button onclick="solvePolynomial()">Solve</button>
+    <div id="polyOutput" class="output"></div>
+  </div>
+
+  <!-- Calculator -->
+  <div class="box">
+    <h2>Calculator</h2>
+    <input type="text" id="calcInput" placeholder="e.g. 5+3*2">
+    <button onclick="calculate()">Calculate</button>
+    <div id="calcOutput" class="output"></div>
+  </div>
+
+  <script>
+    // 1. AI (calls Netlify Function -> Chatbase API)
+    async function askAI() {
+      const query = document.getElementById("aiInput").value;
+      const res = await fetch("/.netlify/functions/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query })
+      });
+      const data = await res.json();
+      document.getElementById("aiResponse").innerText = data.reply || "No response.";
+    }
+
+    // 2. Polynomial Solver (quadratic only for now)
+    function solvePolynomial() {
+      let input = document.getElementById("polyInput").value;
+      try {
+        let match = input.match(/([+-]?\d*)x\^2([+-]?\d*)x([+-]?\d+)/);
+        if (!match) throw "Only quadratic supported (ax^2+bx+c)";
+        let a = parseFloat(match[1] || 1);
+        let b = parseFloat(match[2] || 0);
+        let c = parseFloat(match[3] || 0);
+        let disc = b*b - 4*a*c;
+        let result = disc < 0 ? "No real roots" :
+          `Roots: ${(-b+Math.sqrt(disc))/(2*a)}, ${(-b-Math.sqrt(disc))/(2*a)}`;
+        document.getElementById("polyOutput").innerText = result;
+      } catch (err) {
+        document.getElementById("polyOutput").innerText = "Error: " + err;
+      }
+    }
+
+    // 3. Calculator
+    function calculate() {
+      try {
+        let input = document.getElementById("calcInput").value;
+        let result = eval(input); // ⚠️ demo only
+        document.getElementById("calcOutput").innerText = result;
+      } catch {
+        document.getElementById("calcOutput").innerText = "Invalid expression";
+      }
+    }
+  </script>
+
+</body>
+</html>
