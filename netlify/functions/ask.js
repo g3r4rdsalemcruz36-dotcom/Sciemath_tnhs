@@ -1,36 +1,36 @@
-// file: netlify/functions/ask.js
+// netlify/functions/ask.js
 import fetch from "node-fetch";
 
 export async function handler(event) {
   try {
-    const { query } = JSON.parse(event.body);
+    const { question } = JSON.parse(event.body || "{}");
 
-    // 🔑 Replace with your Chatbase credentials
-    const CHATBASE_API_KEY = "YOUR_CHATBASE_API_KEY";
-    const BOT_ID = "YOUR_CHATBASE_BOT_ID";
+    if (!question) {
+      return { statusCode: 400, body: JSON.stringify({ error: "No question provided." }) };
+    }
+
+    // 🔑 Use your real Chatbase API key here:
+    const API_KEY = "ac20dc25-4986-4036-91d7-d66cb0205e52"; 
+    const CHATBOT_ID = "ybaLccsZUv7BaHjFEJhmA";
 
     const response = await fetch(`https://www.chatbase.co/api/v1/chat`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${CHATBASE_API_KEY}`,
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${API_KEY}`
       },
       body: JSON.stringify({
-        messages: [{ role: "user", content: query }],
-        botId: BOT_ID,
-      }),
+        chatbotId: CHATBOT_ID,
+        messages: [{ role: "user", content: question }]
+      })
     });
 
     const data = await response.json();
     return {
       statusCode: 200,
-      body: JSON.stringify({ reply: data.output || "No response from Chatbase" }),
+      body: JSON.stringify({ answer: data?.output || "⚠️ No answer from Chatbase." })
     };
-
   } catch (err) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: err.message }),
-    };
+    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
 }
