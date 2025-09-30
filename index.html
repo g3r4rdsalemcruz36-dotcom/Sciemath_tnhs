@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Interactive Web-Based Learning Platform (AI Assisted)</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive Web-Based Learning Platform (AI Powered)</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f4f7fa; }
     header { background: #1e88e5; color: white; text-align: center; padding: 20px; }
@@ -23,13 +23,13 @@
 
 <header>
   <h1>Interactive Web-Based Learning Platform</h1>
-  <p>By Gerard S. Dela Cruz, Chloe Alexis Santos, Johnrey P. Amoroso 🎉</p>
+  <p>By Gerard S. Dela Cruz, Chloe Alexis Santos, Johnrey P. Amoroso</p>
 </header>
 
 <nav>
-  <button class="active" onclick="showTab('qna')">🤖 AI Q&A</button>
-  <button onclick="showTab('calc')">🧮 Calculator</button>
-  <button onclick="showTab('poly')">📊 Polynomial Solver</button>
+  <button class="active" onclick="showTab('qna', this)">🤖 AI Q&A</button>
+  <button onclick="showTab('calc', this)">🧮 Calculator</button>
+  <button onclick="showTab('poly', this)">📊 Polynomial Solver</button>
 </nav>
 
 <div class="container">
@@ -60,15 +60,37 @@
 </div>
 
 <script>
-// Tab navigation
-function showTab(tabId) {
+// ✅ Tab navigation
+function showTab(tabId, btn) {
+  // Hide all tabs
   document.querySelectorAll('.card').forEach(card => card.classList.add('hidden'));
+  // Show selected tab
   document.getElementById(tabId).classList.remove('hidden');
-  document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
-  event.target.classList.add('active');
+  // Update active button
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  // ✅ Show or hide chatbot
+  const chatbot = document.getElementById('chatbotContainer');
+  if (tabId === 'qna') {
+    chatbot.style.display = 'block';
+    openChatbot(); // Auto-open chatbot when switching to Q&A
+  } else {
+    chatbot.style.display = 'none';
+  }
 }
 
-// AI Q&A Function (FIXED: added headers for JSON)
+// ✅ Auto-open Chatbot
+function openChatbot() {
+  setTimeout(() => {
+    const iframe = document.querySelector("#chatbotContainer iframe");
+    if (iframe) {
+      iframe.contentWindow.postMessage({ type: "open" }, "*");
+    }
+  }, 800); // ~0.8s delay so the chatbot loads first
+}
+
+// ✅ AI Q&A — uses Chatbase API directly
 async function answerQuestion() {
   const input = document.getElementById('userInput').value.trim();
   const responseBox = document.getElementById('response');
@@ -81,68 +103,77 @@ async function answerQuestion() {
   responseBox.textContent = "🤔 Thinking...";
 
   try {
-    const res = await fetch("/.netlify/functions/ask", {
+    const res = await fetch(`https://www.chatbase.co/api/v1/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" }, // ✅ FIXED
-      body: JSON.stringify({ question: input })
+      headers: {
+        "Authorization": "Bearer ac20dc25-4986-4036-91d7-d66cb0205e52", // ✅ API key here
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        messages: [{ role: "user", content: input }],
+        chatbotId: "ybaLccsZUv7BaHjFEJhmA", // ✅ Chatbot ID here
+        stream: false
+      })
     });
 
+    if (!res.ok) throw new Error("Failed to fetch from Chatbase.");
     const data = await res.json();
-    responseBox.textContent = data.answer || "⚠️ No answer received.";
+    responseBox.textContent = data.text || "⚠️ No answer received.";
   } catch (err) {
     responseBox.textContent = "❌ Error: " + err.message;
   }
 }
 
+// ✅ Calculator
+function calculateExpression() {
+  const input = document.getElementById('calcInput').value;
+  const resultBox = document.getElementById('calcResult');
+  try {
+    const result = eval(input); // ⚠️ Only for demo — avoid eval in production
+    resultBox.textContent = "Result: " + result;
+  } catch {
+    resultBox.textContent = "⚠️ Invalid expression.";
+  }
+}
 
-  <script>
-    // 1. AI (calls Netlify Function -> Chatbase API)
-    async function askAI() {
-      const query = document.getElementById("aiInput").value;
-      const res = await fetch("/.netlify/functions/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query })
-      });
-      const data = await res.json();
-      document.getElementById("aiResponse").innerText = data.reply || "No response.";
-    }
+// ✅ Polynomial Solver
+function solvePolynomial() {
+  const eq = document.getElementById("polyInput").value;
+  const resultBox = document.getElementById("polyResult");
+  const match = eq.match(/([+-]?\d*)x\^2([+-]?\d*)x([+-]?\d+)/);
 
-    // 2. Polynomial Solver (quadratic only for now)
-    function solvePolynomial() {
-      let input = document.getElementById("polyInput").value;
-      try {
-        let match = input.match(/([+-]?\d*)x\^2([+-]?\d*)x([+-]?\d+)/);
-        if (!match) throw "Only quadratic supported (ax^2+bx+c)";
-        let a = parseFloat(match[1] || 1);
-        let b = parseFloat(match[2] || 0);
-        let c = parseFloat(match[3] || 0);
-        let disc = b*b - 4*a*c;
-        let result = disc < 0 ? "No real roots" :
-          `Roots: ${(-b+Math.sqrt(disc))/(2*a)}, ${(-b-Math.sqrt(disc))/(2*a)}`;
-        document.getElementById("polyOutput").innerText = result;
-      } catch (err) {
-        document.getElementById("polyOutput").innerText = "Error: " + err;
-      }
-    }
+  if (!match) {
+    resultBox.textContent = "⚠️ Please enter a valid quadratic equation.";
+    return;
+  }
 
-    // 3. Calculator
-    function calculate() {
-      try {
-        let input = document.getElementById("calcInput").value;
-        let result = eval(input); // ⚠️ demo only
-        document.getElementById("calcOutput").innerText = result;
-      } catch {
-        document.getElementById("calcOutput").innerText = "Invalid expression";
-      }
-    }
+  const a = parseFloat(match[1] || 1);
+  const b = parseFloat(match[2] || 0);
+  const c = parseFloat(match[3] || 0);
+  const d = b * b - 4 * a * c;
+
+  if (d < 0) {
+    resultBox.textContent = "No real roots.";
+  } else {
+    const root1 = (-b + Math.sqrt(d)) / (2 * a);
+    const root2 = (-b - Math.sqrt(d)) / (2 * a);
+    resultBox.textContent = `Roots: ${root1}, ${root2}`;
+  }
+}
+</script>
+
+<!-- ✅ Floating Chatbot Widget -->
 <script>
   window.embeddedChatbotConfig = {
-    chatbotId: "ac20dc25-4986-4036-91d7-d66cb0205e52",
+    chatbotId: "ybaLccsZUv7BaHjFEJhmA",
     domain: "www.chatbase.co"
   }
 </script>
-<script src="https://www.chatbase.co/embed.min.js" chatbotId="ybaLccsZUv7BaHjFEJhmA" domain="www.chatbase.co" defer></script>
-</body>
+<script src="https://www.chatbase.co/embed.min.js"
+        chatbotId="ybaLccsZUv7BaHjFEJhmA"
+        domain="www.chatbase.co"
+        defer>
+</script>
 
+</body>
 </html>
